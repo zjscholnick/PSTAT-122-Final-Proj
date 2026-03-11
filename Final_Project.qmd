@@ -33,7 +33,7 @@ knitr::opts_chunk$set(error =  FALSE)
 <div style="text-align: center">
 <span style="color: blue;"> **STUDENT NAME **</span> 
 </div>
-- STUDENT 1    (NetID 1)
+- Zachary Scholnick    (3374824)
 - STUDENT 2    (NetID 2)
 - STUDENT 3    (NetID 3)
 - STUDENT 4    (NetID 4)
@@ -50,6 +50,11 @@ knitr::opts_chunk$set(error =  FALSE)
 -	Clear statement of the objective or research question.
 -	Brief context or motivation.
 
+In the field of map-making and cartography, scale is one of the most critical and challenging decisions practitioners face. At too large of a scale (zoomed in), key features are easily visible, but lose out on important context. At the same time, a very low scale (zoomed out), means that the information is difficult to see and fine spatial details are lost. Getting the scale of your map right is critical in conveying key information - and for that reason it's a question asked every time a map is created. On top of the practical aspects of mapmaking, humans possess a number of cognitive biases that make interpretations of proportion and area very difficult. As such, this experiment was motivated by the desire to provide real insights into what scale of representation makes estimation of area most intuitive.
+
+While tackling this in entirety is beyond the scope of this project, we chose to focus on testing a key component of this issue: How does the scale of a mapped polygon affect the accuracy in which users are able to estimate the area? Do people systematically overestimate or underestimate polygon area at different scales?
+
+
 # Experimental Design
 - Description of factors and treatment structure.
 - Clearly state what you are measuring and the units.
@@ -62,7 +67,35 @@ Guideline: 5–10 per treatment for CRD, 3–5 blocks for RCBD, total feasible w
 
 (You are encouraged to explore more resources for determining the sample size )
 
+## Experimental Design
 
+To assess this, we created 3 polygons of equal area, 1.71 square miles, selected because mapped parcels, agricultural units, and other targets of interest are commonly in the 1-3 square mile range. These 3 polygons represented common archetypes in geometric representation: the simple polygon, rounded polygons, and the more complex, concave polygon. We selected 3 random regions in the Patagonian Steppe in Argentina, as this region lacked easily recognizable reference points of scale, like trees or streams, and consisted mainly of rock formations of unidentifiable size. To ensure consistent areal calculation of mapped region and polygon, we opted for the POSGAR 2007/EPSG:5343 projection, which is the official geodetic reference system of Argentina.
+
+Each polygon was then plotted at the scale ratios of 1:13,390, 1:26,780, and 1:59,852 to provide a large-scale, medium-scale, and small-scale plot. In a more generalizable interpretation, this means that we plotted polygons such that they covered 40%, 10%, and 2% of the entire mapped region. The scale bar itself was dynamically recalculated using QGIS based on the current map extent with a fixed display size for a constant visual across maps.
+
+| Scale Label | Scale Ratio | Polygon Coverage |
+|-------------|-------------|-----------------|
+| Large (L)   | 1:13,390    | 40%             |
+| Medium (M)  | 1:26,780    | 10%             |
+| Small (S)   | 1:59,852    | 2%              |
+
+: Scale treatments and polygon coverage of map frame {#tbl-scales}
+
+To isolate the desired effect of the impact of scale on area estimates, we employed the latin squares experimental design to account for variations within user interpretation and type of polygon. We expected some participants to systematically perform at higher or lower levels of success across every presented task dependent on a number of external factors, including eyesight and familiarity with related tasks. By controlling for participants, we seek to isolate common patterns across the studied population. We also hypothesized that the different shapes of polygons would modify the difficulty of area estimates at varying scales. By introducing 3 archetypal polygons, and recording results per polygon, we can also account for the variation in performance induced by polygon type. This brings us to the following standard latin square setup:
+
+| | Curved Polygon | Simple Polygon | Concave Polygon |
+|-------------|----------------|----------------|-----------------|
+| **Participant 1** | S | M | L |
+| **Participant 2** | M | L | S |
+| **Participant 3** | L | S | M |
+
+: Latin square treatment assignment for one replicate block {#tbl-latin}
+
+In this experiment, each participant was given 30 seconds to write down an area estimate in square miles of a curved, simple and concave polygon, each shown at a unique scale. This response was then transformed into a signed percent error:
+
+$$\text{Percent Error} = \frac{\hat{a} - a}{a} \times 100$$
+
+where $\hat{a}$ is the participant's estimate and $a = 1.71$ square miles is the true polygon area. While each polygon has equal size, the participants were not informed during the experiment. 5 replications were performed, and with 3 participants per block, the total experiment had 15 participants. All factors in the experiment - polygon type, participant, and scale - were fixed effects.
 
 # Data Collection
 - **Procedure**: Describe how and when the experiment was conducted (e.g., location, date, steps taken).
