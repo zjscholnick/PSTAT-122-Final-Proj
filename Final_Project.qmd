@@ -99,6 +99,83 @@ where $\hat{a}$ is the participant's estimate and $a = 1.71$ square miles is the
 
 # Data Collection
 - **Procedure**: Describe how and when the experiment was conducted (e.g., location, date, steps taken).
+
+Slides for running trials: https://docs.google.com/presentation/d/1cQkHKFSfIFLclCvy6DIQ8lRVRss23OmEZ6OrBmpAJ2I/edit?usp=sharing
+
+```{r}
+library(agricolae)
+
+scales <- c("L", "M", "S")
+polygon_types <- c("curved", "simple", "concave")
+
+# 1. Map each participant to a specific replicate AND a specific row
+set.seed(42)
+participant_assignment <- data.frame(
+  replicate = rep(1:5, each = 3),
+  row = rep(1:3, times = 5),
+  # Randomly shuffle participants P1 through P15 into these slots
+  participant = paste0("P", sample(1:15)) 
+)
+
+# 2. Generate the 5 Latin Squares
+design_df <- do.call(rbind, lapply(1:5, function(i) {
+  book <- design.lsd(scales, seed = i * 10)$book
+  book$replicate <- i
+  
+  # Assign polygon types to columns (1, 2, 3)
+  set.seed(i)
+  col_map <- setNames(sample(polygon_types), 1:3)
+  book$polygon <- col_map[as.character(book$col)]
+  
+  return(book)
+}))
+
+# 3. THE FIX: Merge on BOTH replicate and row 
+design_df <- merge(design_df, participant_assignment, by = c("replicate", "row"))
+
+# 4. Sort neatly by participant (P1 to P15) and then by trial/column (1, 2, 3)
+# (using a custom sort so P10 doesn't jump in front of P2)
+design_df <- design_df[order(as.numeric(gsub("P", "", design_df$participant)), design_df$col), 
+                       c("participant", "replicate", "row", "col", "scales", "polygon")]
+
+# Add empty response column
+design_df$percent_error <- NA
+
+cat("\nFull Design\n")
+print(design_df)
+```
+
+
+```{r}
+enter_data <- function(df, p_name, estimates) {
+  # Quick check to make sure you entered exactly 3 values
+  if(length(estimates) != 3) {
+    stop("Please provide exactly 3 estimates for the participant.")
+  }
+  
+  # Calculate the percent error based on the true area (1.71 sq miles)
+  errors <- ((estimates - 1.71) / 1.71) * 100
+  
+  # Assign the errors to col 1, 2, and 3 (Trial 1, 2, and 3) for that specific participant
+  for(i in 1:3) {
+    df$percent_error[df$participant == p_name & df$col == i] <- errors[i]
+  }
+  
+  return(df)
+}
+
+# --- Example Usage ---
+# Enter data for P1, P2, and P3 as you collect it:
+design_df <- enter_data(design_df, "P1", c(9.8, 6.5, 12.0))
+design_df <- enter_data(design_df, "P2", c(3, 3, 3))
+design_df <- enter_data(design_df, "P3", c(2, 1, 3.2))
+design_df <- enter_data(design_df, "P4", c(3, 4, 4.5))
+design_df <- enter_data(design_df, "P5", c(3.1, 2.8, 2.6))
+design_df <- enter_data(design_df, "P6", c(2.4, 2.2, 1.6))
+design_df <- enter_data(design_df, "P7", c(5, 12, 6))
+
+```
+
 - **Challenges/Adjustments**: Mention any difficulties or changes made during data collection (e.g., technical issues, time adjustments).
 - **Data Presentation**: Display the collected data in tables or graphs, summarizing key measures like mean and standard deviation..
 
