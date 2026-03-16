@@ -231,20 +231,60 @@ The boxplots show that percent error is fairly similar across all three scale tr
 
 
 
--   **Hypothesis Testing**: Test your hypothesis with an appropriate statistical test (e.g., ANOVA).
+**Hypothesis Testing**: Test your hypothesis with an appropriate statistical test (e.g., ANOVA).
+```{r}
+# Latin square ANOVA model
+model <- aov(percent_error ~ scales + polygon + participant, data = design_df)
+summary(model)
 
--   **Tables, Figures, & Code**: Include key results (ANOVA table, post-test) and relevant `R` code excerpts where needed.
+TukeyHSD(model, "scales")
+```
 
--   Use `R` to analyze the data.
+We test the following hypotheses:
+$$H_0: \mu_L = \mu_M = \mu_S$$
+
+$$ H_a: \text{At least one scale mean differs} $$
+where $$\mu_L$$, $$\mu_M$$, and $$\mu_S$$ represent the mean percent error under large, medium, and small scale treatments respectively. A Latin square ANOVA was fitted with scale as the primary treatment factor and polygon type and participant as blocking factors.
+
+The ANOVA results show that scale treatment was not statistically significant (F = 0.144, p = 0.867), meaning we fail to reject the null hypothesis. There is no evidence that map scale affects the accuracy of area estimation. Similarly, polygon type was not significant (F = 0.258, p = 0.774), suggesting that polygon shape did not meaningfully influence estimation accuracy.
+
+However, the participant blocking factor was highly significant (F = 4.303, p < 0.001), confirming that individual participants varied substantially in their estimation ability. This validates our decision to use a Latin square design to control for participant-level variation — without blocking, this variability would have inflated our residual error and made it even harder to detect a scale effect.
+
+The Tukey HSD post-hoc test confirmed no significant pairwise differences between any scale pairs (M-L: p = 0.862, S-L: p = 0.927, S-M: p = 0.988), with all confidence intervals comfortably overlapping zero.
+
+**Tables, Figures, & Code**:
+
+```{r}
+# ANOVA Table
+model <- aov(percent_error ~ scales + polygon + participant, data = design_df)
+knitr::kable(summary(model)[[1]], 
+             caption = "Latin Square ANOVA Results",
+             digits = 3)
+
+# Tukey Post-hoc Table
+tukey_results <- TukeyHSD(model, "scales")
+tukey_df <- as.data.frame(tukey_results$scales)
+knitr::kable(tukey_df,
+             caption = "Tukey HSD Post-hoc Test for Scale Treatment",
+             digits = 3,
+             col.names = c("Difference", "Lower 95% CI", "Upper 95% CI", "Adjusted p-value"))
+```
+
 
 # Conclusions
 
--   Summarize key findings.
--   Comment on limitations and possible improvements.
+This experiment investigated whether the scale at which a polygon is displayed on a map affects a participant's ability to accurately estimate its area. Based on our Latin square ANOVA, we found no statistically significant effect of map scale on percent error (F = 0.144, p = 0.867), nor of polygon type (F = 0.258, p = 0.774). As such, we fail to reject the null hypothesis — there is no evidence that large, medium, or small scale presentations lead to meaningfully different estimation accuracy. Notably, all participants systematically overestimated polygon area regardless of scale or shape, suggesting a general human tendency to overestimate mapped area.
+
+The most significant finding was the strong participant effect (F = 4.303, p < 0.001), confirming that individual differences in spatial reasoning ability account for far more variation in estimation accuracy than the experimental treatments themselves. This validates the Latin square blocking structure used in the design.
+
+## Limitations and Improvements
+Several limitations should be noted. First, many participants were unfamiliar with square miles as a unit, likely introducing systematic overestimation bias unrelated to scale. Future studies could provide unit conversion references or use more intuitive units. Second, the 30-second time limit may have prevented deliberate estimation, capturing first impressions rather than considered judgments. Third, the shared library setting created potential for participants to overhear each other's guesses, which may have anchored some responses. Finally, with only 15 participants, the study was underpowered to detect small effects of scale. A larger sample with greater replication would improve statistical power considerably.
 
 # References
 
-(If needed.)
+Instituto Geográfico Militar de la República Argentina. (2009). 
+POSGAR 2007 / Argentina 1 (EPSG:5343). EPSG Geodetic Parameter Registry. 
+Retrieved from https://epsg.io/5343
 
 # Appendices
 
