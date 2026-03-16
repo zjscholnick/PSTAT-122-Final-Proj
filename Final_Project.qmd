@@ -34,6 +34,7 @@ knitr::opts_chunk$set(error =  FALSE)
 
 -   Zachary Scholnick (3374824)
 -   Anjali Dev (A167A78)
+-   Logan Marks (9536947)
 
 ::::
 
