@@ -29,13 +29,12 @@ knitr::opts_chunk$set(error =  FALSE)
 
 :::: callout
 ::: {style="text-align: center"}
-[ **STUDENT NAME** ]{style="color: blue;"}
+[**STUDENT NAME**]{style="color: blue;"}
 :::
 
 -   Zachary Scholnick (3374824)
 -   Anjali Dev (A167A78)
 -   Logan Marks (9536947)
-
 ::::
 
 ::: callout-caution
@@ -44,8 +43,8 @@ knitr::opts_chunk$set(error =  FALSE)
 **Due Date:** Monday, March 16, 2026, 11:59 PM
 :::
 
-```{r}
-library(agricolae) 
+```{r echo=FALSE}
+library(agricolae)
 library(car)         
 library(dplyr)  
 library(ggplot2)
@@ -57,7 +56,6 @@ library(knitr)
 In the field of map-making and cartography, scale is one of the most critical and challenging decisions practitioners face. At too large of a scale (zoomed in), key features are easily visible, but lose out on important context. At the same time, a very low scale (zoomed out), means that the information is difficult to see and fine spatial details are lost. Getting the scale of your map right is critical in conveying key information - and for that reason it's a question asked every time a map is created. On top of the practical aspects of mapmaking, humans possess a number of cognitive biases that make interpretations of proportion and area very difficult. As such, this experiment was motivated by the desire to provide real insights into what scale of representation makes estimation of area most intuitive.
 
 While tackling this in entirety is beyond the scope of this project, we chose to focus on testing a key component of this issue: How does the scale of a mapped polygon affect the accuracy in which users are able to estimate the area? Do people systematically overestimate or underestimate polygon area at different scales?
-
 
 # Experimental Design
 
@@ -108,7 +106,7 @@ $$Y_{ijk} = \mu + \tau_i + \beta_j + \rho_k + \epsilon_{ijk}$$
 
 
 
-```{r}
+```{r echo=FALSE}
 #### Assigning Randomized + Balanced Treatments for Participants ####
 library(agricolae)
 
@@ -146,25 +144,20 @@ design_df <- design_df[order(as.numeric(gsub("P", "", design_df$participant)), d
 
 # Creating an empty response column
 design_df$percent_error <- NA
-
-cat("\nFull Design\n")
-print(design_df)
 ```
 
 # Data Collection
 
-**Procedure** 
-Each participant was given 30 seconds to estimate the area in square miles of each polygon shown. Trials were conducted using a slide presentation displayed on a laptop screen, with each slide showing one polygon at its assigned scale alongside a scale bar. Maps were shown on the same monitor at the same display size to keep stimuli constant. Participants recorded their estimates on paper. All 5 replicates were conducted in the UCSB library on March 14, 2026. Participants were seated individually and shown the slides in sequence according to the generated Latin Squares, with no prior knowledge of the true polygon area or that all three polygons were equal in size.
+**Procedure** Each participant was given 30 seconds to estimate the area in square miles of each polygon shown. Trials were conducted using a slide presentation displayed on a laptop screen, with each slide showing one polygon at its assigned scale alongside a scale bar. Maps were shown on the same monitor at the same display size to keep stimuli constant. Participants recorded their estimates on paper. All 5 replicates were conducted in the UCSB library on March 14, 2026. Participants were seated individually and shown the slides in sequence according to the generated Latin Squares, with no prior knowledge of the true polygon area or that all three polygons were equal in size.
 
 
-**Challenges/Adjustments**
- Several challenges arose during data collection. The most notable was that some participants were unfamiliar with square miles as a unit of measurement, which may have introduced systematic bias into estimates regardless of scale treatment. While participants were not coached on how to use the scale bar, some may have relied on intuition rather than calculation. Additionally, the 30-second time limit, while intentional in capturing instinctive responses, may have prevented participants from making more deliberate estimates — meaning results may reflect first impressions of area rather than considered judgments. 
+**Challenges/Adjustments** Several challenges arose during data collection. The most notable was that some participants were unfamiliar with square miles as a unit of measurement, which may have introduced systematic bias into estimates regardless of scale treatment. While participants were not coached on how to use the scale bar, some may have relied on intuition rather than calculation. Additionally, the 30-second time limit, while intentional in capturing instinctive responses, may have prevented participants from making more deliberate estimates — meaning results may reflect first impressions of area rather than considered judgments. 
 
 Finally, as trials were conducted in a shared library space, there is a very small possibility that some participants overheard the estimates of others, which could have anchored subsequent guesses. Protocol was updated so that participants could not use outside props like a pencil, phone, or keys to match distances from the scale bar onto the map. This was to ensure constant conditions in estimating area across trials.
 
 **Data Presentation**
 
-```{r}
+```{r echo=FALSE}
 enter_data <- function(df, p_name, estimates) {
 
   # calculate the percent error based on the true area (1.71 sq miles)
@@ -203,7 +196,7 @@ knitr::kable(design_df,
 # Analysis
 
 **Exploratory Data**:
-```{r}
+```{r echo=FALSE}
 library(dplyr)
 library(ggplot2)
 
@@ -222,7 +215,7 @@ knitr::kable(summary_stats, caption = "Summary statistics of percent error by sc
 ```
 
 
-```{r}
+```{r echo=FALSE, fig.align='center'}
 # Boxplot by Scale Treatment
 ggplot(design_df, aes(x = scales, y = percent_error, fill = scales)) +
   geom_boxplot() +
@@ -234,7 +227,7 @@ ggplot(design_df, aes(x = scales, y = percent_error, fill = scales)) +
 ```
 
 Note: 1 observation of 601% error on the medium scale was omitted for visual clarity
-```{r}
+```{r echo=FALSE, fig.align='center'}
 # Boxplot by polygon type
 ggplot(design_df, aes(x = polygon, y = percent_error, fill = polygon)) +
   geom_boxplot() +
@@ -316,6 +309,7 @@ knitr::kable(pct_tbl,
              caption = "ANOVA Table - Signed Percent Error",
              na_string = "-")
 ```
+
 ```{r echo=FALSE}
 lm_pct <- summary.lm(mod_pct)$coefficients
 lm_pct <- as.data.frame(lm_pct)
@@ -324,6 +318,7 @@ knitr::kable(round(lm_pct, 4),
              col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
              caption = "Treatment Parameter Estimates - Signed Percent Error")
 ```
+
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(resid = residuals(mod_pct)), aes(sample = resid)) +
   stat_qq() +
@@ -332,6 +327,7 @@ ggplot(data.frame(resid = residuals(mod_pct)), aes(sample = resid)) +
        x = "Theoretical Quantiles", y = "Sample Quantiles") +
   theme_minimal()
 ```
+
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(fitted = fitted(mod_pct),
                   resid  = residuals(mod_pct)),
@@ -342,6 +338,7 @@ ggplot(data.frame(fitted = fitted(mod_pct),
        x = "Fitted Values", y = "Residuals") +
   theme_minimal()
 ```
+
 ```{r echo=FALSE}
 assump_pct <- data.frame(
   Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
@@ -355,6 +352,7 @@ assump_pct <- data.frame(
 )
 knitr::kable(assump_pct, caption = "Assumption Tests - Signed Percent Error")
 ```
+
 ```{r echo=FALSE}
 knitr::kable(outliers, caption = "Detected Outliers (|Standardized Residual| > 2.5)")
 ```
@@ -377,6 +375,7 @@ knitr::kable(noP7_tbl,
              caption = "ANOVA Table - Signed Percent Error (Without Outlier)",
              na_string = "-")
 ```
+
 ```{r echo=FALSE}
 lm_noP7 <- summary.lm(mod_noP7)$coefficients
 lm_noP7 <- as.data.frame(lm_noP7)
@@ -385,6 +384,7 @@ knitr::kable(round(lm_noP7, 4),
              col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
              caption = "Treatment Parameter Estimates - Signed Percent Error (Without Outlier)")
 ```
+
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(resid = residuals(mod_noP7)), aes(sample = resid)) +
   stat_qq() +
@@ -393,6 +393,7 @@ ggplot(data.frame(resid = residuals(mod_noP7)), aes(sample = resid)) +
        x = "Theoretical Quantiles", y = "Sample Quantiles") +
   theme_minimal()
 ```
+
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(fitted = fitted(mod_noP7),
                   resid  = residuals(mod_noP7)),
@@ -403,6 +404,7 @@ ggplot(data.frame(fitted = fitted(mod_noP7),
        x = "Fitted Values", y = "Residuals") +
   theme_minimal()
 ```
+
 ```{r echo=FALSE}
 assump_noP7 <- data.frame(
   Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
@@ -448,6 +450,7 @@ knitr::kable(log_tbl,
              caption = "ANOVA Table - Log Ratio Model",
              na_string = "-")
 ```
+
 ```{r echo=FALSE}
 lm_log <- summary.lm(mod_log)$coefficients
 lm_log <- as.data.frame(lm_log)
@@ -456,6 +459,7 @@ knitr::kable(round(lm_log, 4),
              col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
              caption = "Treatment Parameter Estimates - Log Ratio Model")
 ```
+
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(resid = residuals(mod_log)), aes(sample = resid)) +
   stat_qq() +
@@ -464,6 +468,7 @@ ggplot(data.frame(resid = residuals(mod_log)), aes(sample = resid)) +
        x = "Theoretical Quantiles", y = "Sample Quantiles") +
   theme_minimal()
 ```
+
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(fitted = fitted(mod_log),
                   resid  = residuals(mod_log)),
@@ -474,6 +479,7 @@ ggplot(data.frame(fitted = fitted(mod_log),
        x = "Fitted Values", y = "Residuals") +
   theme_minimal()
 ```
+
 ```{r echo=FALSE}
 assump_log <- data.frame(
   Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
@@ -487,6 +493,7 @@ assump_log <- data.frame(
 )
 knitr::kable(assump_log, caption = "Assumption Tests - Log Ratio Model")
 ```
+
 ```{r echo=FALSE}
 if(nrow(outliers_log) == 0){
   cat("No outliers detected under log ratio transformation.")
@@ -537,4 +544,371 @@ Stevens, S. S. (1957). On the psychophysical law. Psychological Review, 64(3), 1
 
 # Appendices
 
--   `R` code.
+-   Slides for running trials: https://docs.google.com/presentation/d/1cQkHKFSfIFLclCvy6DIQ8lRVRss23OmEZ6OrBmpAJ2I/edit?usp=sharing
+
+-   `R` code:
+
+```{r echo=TRUE}
+#### Assigning Randomized + Balanced Treatments for Participants ####
+library(agricolae)
+
+scales <- c("L", "M", "S")
+polygon_types <- c("curved", "simple", "concave")
+
+# randomly assigning each participant to a specific replicate + row
+set.seed(42)
+participant_assignment <- data.frame(
+  replicate = rep(1:5, each = 3),
+  row = rep(1:3, times = 5),
+  # Randomly assigning participants through these slots
+  participant = paste0("P", sample(1:15))
+)
+
+# Generating the 5 Latin Squares
+design_df <- do.call(rbind, lapply(1:5, function(i) {
+  book <- design.lsd(scales, seed = i * 10)$book
+  book$replicate <- i
+
+  # Assign polygon types to columns (1, 2, 3)
+  set.seed(i)
+  col_map <- setNames(sample(polygon_types), 1:3)
+  book$polygon <- col_map[as.character(book$col)]
+
+  return(book)
+}))
+
+# Merge on BOTH replicate and row to build final design dataframe
+design_df <- merge(design_df, participant_assignment, by = c("replicate", "row"))
+
+# 4. Sort neatly by participant (P1 to P15) and then by trial/column (1, 2, 3) to make implementing easy
+design_df <- design_df[order(as.numeric(gsub("P", "", design_df$participant)), design_df$col),
+                       c("participant", "replicate", "row", "col", "scales", "polygon")]
+
+# Creating an empty response column
+design_df$percent_error <- NA
+
+cat("\nFull Design\n")
+print(design_df)
+```
+
+```{r echo=TRUE}
+enter_data <- function(df, p_name, estimates) {
+
+  # calculate the percent error based on the true area (1.71 sq miles)
+  errors <- ((estimates - 1.71) / 1.71) * 100
+
+  for(i in 1:3) {
+    df$percent_error[df$participant == p_name & df$col == i] <- errors[i]
+  }
+
+  return(df)
+}
+
+#data collection
+design_df <- enter_data(design_df, "P1", c(4.8, 4.5, 3.0))
+design_df <- enter_data(design_df, "P2", c(3, 3, 3))
+design_df <- enter_data(design_df, "P3", c(2, 1, 3.2))
+design_df <- enter_data(design_df, "P4", c(3, 4, 4.5))
+design_df <- enter_data(design_df, "P5", c(3.1, 2.8, 2.6))
+design_df <- enter_data(design_df, "P6", c(2.4, 2.2, 1.6))
+design_df <- enter_data(design_df, "P7", c(5, 12, 6))
+design_df <- enter_data(design_df, "P8", c(2.4, 2.5, 2))
+design_df <- enter_data(design_df, "P9", c(1.43, 2.8, 3.2))
+design_df <- enter_data(design_df, "P10", c(3.2, 3.5, 4.1))
+design_df <- enter_data(design_df, "P11", c(2.7, 2.9, 3.1))
+design_df <- enter_data(design_df, "P12", c(4.3, 4.1, 3.9))
+design_df <- enter_data(design_df, "P13", c(3.6, 3.2, 3.8))
+design_df <- enter_data(design_df, "P14", c(2.9, 2.4, 2.7))
+design_df <- enter_data(design_df, "P15", c(4.8, 4.5, 4.9))
+
+knitr::kable(design_df,
+             caption = "Full experimental data with percent error by participant, polygon type, and scale",
+             digits = 2)
+```
+
+```{r echo=TRUE}
+library(dplyr)
+library(ggplot2)
+
+# Basic summary statistics by scale
+summary_stats <- design_df %>%
+  group_by(scales) %>%
+  summarise(
+    Mean = round(mean(percent_error, na.rm = TRUE), 2),
+    SD = round(sd(percent_error, na.rm = TRUE), 2),
+    Min = round(min(percent_error, na.rm = TRUE), 2),
+    Max = round(max(percent_error, na.rm = TRUE), 2),
+    N = n()
+  )
+
+knitr::kable(summary_stats, caption = "Summary statistics of percent error by scale treatment")
+```
+
+```{r echo=TRUE}
+# Boxplot by Scale Treatment
+ggplot(design_df, aes(x = scales, y = percent_error, fill = scales)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  coord_cartesian(ylim = c(-100, 300)) +
+  labs(title = "Percent Error by Scale Treatment",
+       x = "Scale", y = "Percent Error (%)") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+# Boxplot by polygon type
+ggplot(design_df, aes(x = polygon, y = percent_error, fill = polygon)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  coord_cartesian(ylim = c(-100, 300)) +
+  labs(title = "Percent Error by Polygon Type",
+       x = "Polygon Type", y = "Percent Error (%)") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+# fit models and run diagnostics
+
+# percent error — full data
+mod_pct <- aov(percent_error ~ scales + polygon + participant, data = design_df)
+
+sw_pct       <- shapiro.test(residuals(mod_pct))
+design_df$resid_pct <- residuals(mod_pct)
+lev_scale_pct   <- leveneTest(resid_pct ~ scales, data = design_df)
+lev_poly_pct    <- leveneTest(resid_pct ~ polygon, data = design_df)
+design_df$std_resid <- residuals(mod_pct) / sigma(mod_pct)
+outliers <- design_df %>%
+  filter(abs(std_resid) > 2.5) %>%
+  select(participant, scales, polygon, percent_error, std_resid)
+
+# percent error — P7 removed
+df_noP7 <- design_df %>% filter(participant != "P7")
+mod_noP7 <- aov(percent_error ~ scales + polygon + participant, data = df_noP7)
+
+sw_noP7      <- shapiro.test(residuals(mod_noP7))
+df_noP7$resid_noP7 <- residuals(mod_noP7)
+lev_scale_noP7  <- leveneTest(resid_noP7 ~ scales, data = df_noP7)
+lev_poly_noP7   <- leveneTest(resid_noP7 ~ polygon, data = df_noP7)
+
+# log ratio — full data
+design_df$log_ratio <- log(design_df$percent_error / 100 + 1)
+mod_log <- aov(log_ratio ~ scales + polygon + participant, data = design_df)
+
+sw_log       <- shapiro.test(residuals(mod_log))
+design_df$resid_log <- residuals(mod_log)
+lev_scale_log   <- leveneTest(resid_log ~ scales, data = design_df)
+lev_poly_log    <- leveneTest(resid_log ~ polygon, data = design_df)
+design_df$std_resid_log <- residuals(mod_log) / sigma(mod_log)
+outliers_log <- design_df %>%
+  filter(abs(std_resid_log) > 2.5) %>%
+  select(participant, scales, polygon, log_ratio, std_resid_log)
+```
+
+```{r echo=TRUE}
+pct_raw <- summary(mod_pct)[[1]]
+pct_tbl <- data.frame(
+  Df     = pct_raw$Df,
+  SumSq  = round(pct_raw$`Sum Sq`, 3),
+  MeanSq = round(pct_raw$`Mean Sq`, 3),
+  Fvalue = round(pct_raw$`F value`, 3),
+  Pvalue = round(pct_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(pct_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Signed Percent Error",
+             na_string = "-")
+```
+
+```{r echo=TRUE}
+lm_pct <- summary.lm(mod_pct)$coefficients
+lm_pct <- as.data.frame(lm_pct)
+lm_pct <- lm_pct[grep("Intercept|scales|polygon", rownames(lm_pct)), ]
+knitr::kable(round(lm_pct, 4),
+             col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
+             caption = "Treatment Parameter Estimates - Signed Percent Error")
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_pct)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Signed Percent Error",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_pct),
+                  resid  = residuals(mod_pct)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Signed Percent Error",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+assump_pct <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_pct$statistic, 4),
+                round(lev_scale_pct[1,2], 4),
+                round(lev_poly_pct[1,2], 4)),
+  P.value   = c(round(sw_pct$p.value, 4),
+                round(lev_scale_pct[1,3], 4),
+                round(lev_poly_pct[1,3], 4)),
+  Result    = c("Fail", "Pass", "Pass")
+)
+knitr::kable(assump_pct, caption = "Assumption Tests - Signed Percent Error")
+```
+
+```{r echo=TRUE}
+knitr::kable(outliers, caption = "Detected Outliers (|Standardized Residual| > 2.5)")
+```
+
+```{r echo=TRUE}
+noP7_raw <- summary(mod_noP7)[[1]]
+noP7_tbl <- data.frame(
+  Df     = noP7_raw$Df,
+  SumSq  = round(noP7_raw$`Sum Sq`, 3),
+  MeanSq = round(noP7_raw$`Mean Sq`, 3),
+  Fvalue = round(noP7_raw$`F value`, 3),
+  Pvalue = round(noP7_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(noP7_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Signed Percent Error (Without Outlier)",
+             na_string = "-")
+```
+
+```{r echo=TRUE}
+lm_noP7 <- summary.lm(mod_noP7)$coefficients
+lm_noP7 <- as.data.frame(lm_noP7)
+lm_noP7 <- lm_noP7[grep("Intercept|scales|polygon", rownames(lm_noP7)), ]
+knitr::kable(round(lm_noP7, 4),
+             col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
+             caption = "Treatment Parameter Estimates - Signed Percent Error (Without Outlier)")
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_noP7)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Signed Percent Error (Without Outlier)",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_noP7),
+                  resid  = residuals(mod_noP7)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Signed Percent Error (Without Outlier)",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+assump_noP7 <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_noP7$statistic, 4),
+                round(lev_scale_noP7[1,2], 4),
+                round(lev_poly_noP7[1,2], 4)),
+  P.value   = c(round(sw_noP7$p.value, 4),
+                round(lev_scale_noP7[1,3], 4),
+                round(lev_poly_noP7[1,3], 4)),
+  Result    = c("Pass", "Pass", "Pass")
+)
+knitr::kable(assump_noP7,
+             caption = "Assumption Tests - Signed Percent Error (Without Outlier)")
+```
+
+```{r echo=TRUE}
+log_raw <- summary(mod_log)[[1]]
+log_tbl <- data.frame(
+  Df     = log_raw$Df,
+  SumSq  = round(log_raw$`Sum Sq`, 3),
+  MeanSq = round(log_raw$`Mean Sq`, 3),
+  Fvalue = round(log_raw$`F value`, 3),
+  Pvalue = round(log_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(log_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Log Ratio Model",
+             na_string = "-")
+```
+
+```{r echo=TRUE}
+lm_log <- summary.lm(mod_log)$coefficients
+lm_log <- as.data.frame(lm_log)
+lm_log <- lm_log[grep("Intercept|scales|polygon", rownames(lm_log)), ]
+knitr::kable(round(lm_log, 4),
+             col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
+             caption = "Treatment Parameter Estimates - Log Ratio Model")
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_log)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Log Ratio Model",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_log),
+                  resid  = residuals(mod_log)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Log Ratio Model",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+assump_log <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_log$statistic, 4),
+                round(lev_scale_log[1,2], 4),
+                round(lev_poly_log[1,2], 4)),
+  P.value   = c(round(sw_log$p.value, 4),
+                round(lev_scale_log[1,3], 4),
+                round(lev_poly_log[1,3], 4)),
+  Result    = c("Pass", "Pass", "Pass")
+)
+knitr::kable(assump_log, caption = "Assumption Tests - Log Ratio Model")
+```
+
+```{r echo=TRUE}
+if(nrow(outliers_log) == 0){
+  cat("No outliers detected under log ratio transformation.")
+} else {
+  knitr::kable(outliers_log, caption = "Outliers - Log Ratio Model")
+}
+```
+
+```{r echo=TRUE}
+mod_order <- aov(log_ratio ~ scales + polygon + participant + as.numeric(col),
+                 data = design_df)
+
+order_raw <- summary(mod_order)[[1]]
+order_tbl <- data.frame(
+  Df     = order_raw$Df,
+  SumSq  = round(order_raw$`Sum Sq`, 3),
+  MeanSq = round(order_raw$`Mean Sq`, 3),
+  Fvalue = round(order_raw$`F value`, 3),
+  Pvalue = round(order_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Trial Order", "Residuals")
+)
+knitr::kable(order_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "Model with Trial Order Covariate - Log Ratio",
+             na_string = "-")
+```
