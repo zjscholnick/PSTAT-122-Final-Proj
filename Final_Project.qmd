@@ -75,7 +75,7 @@ Each polygon was then plotted at the scale ratios of 1:13,390, 1:26,780, and 1:5
 
 Since our project was trying to capture natural, intuitive estimates of area, participants were each shown a unique combination of scale and polygon type to prevent prior exposure from influencing estimates. Each participant receieved 3 treatment assignments, randomized using a Latin square structure to ensure that each participant only saw each scale level and polygon type exactly once in varying orders.
 
-We expected that significant variation in spatial cognitive ability across tested individuals would be a major driver in estimation accuracy. By modeling participant as a random effect, we capture the inter-participant variability and generalizes our insights to a wider population. We also hypothesized that polygon shape would alter estimation difficulty regardless of scale. By introducing 3 archetypal polygons as a fixed effect, we can control for this variability to better isolate the effect of scale.
+We expected that significant variation in spatial cognitive ability across tested individuals would be a major driver in estimation accuracy. By treating participants as a blocking factor, we can account for the inter-participant variability separate from the residual error, and boost our statistical power. We also hypothesized that polygon shape would alter estimation difficulty regardless of scale. By introducing 3 archetypal polygons as a fixed effect, we can control for this variability to better isolate the effect of scale.
 
 ::: {style="display: flex; justify-content: center"}
 |                   | Curved Polygon | Simple Polygon | Concave Polygon |
@@ -156,7 +156,6 @@ print(design_df)
 **Procedure** 
 Each participant was given 30 seconds to estimate the area in square miles of each polygon shown. Trials were conducted using a slide presentation displayed on a laptop screen, with each slide showing one polygon at its assigned scale alongside a scale bar. Maps were shown on the same monitor at the same display size to keep stimuli constant. Participants recorded their estimates on paper. All 5 replicates were conducted in the UCSB library on March 14, 2026. Participants were seated individually and shown the slides in sequence according to the generated Latin Squares, with no prior knowledge of the true polygon area or that all three polygons were equal in size.
 
-ADD AS APPENDIX Slides for running trials: https://docs.google.com/presentation/d/1cQkHKFSfIFLclCvy6DIQ8lRVRss23OmEZ6OrBmpAJ2I/edit?usp=sharing
 
 **Challenges/Adjustments**
  Several challenges arose during data collection. The most notable was that some participants were unfamiliar with square miles as a unit of measurement, which may have introduced systematic bias into estimates regardless of scale treatment. While participants were not coached on how to use the scale bar, some may have relied on intuition rather than calculation. Additionally, the 30-second time limit, while intentional in capturing instinctive responses, may have prevented participants from making more deliberate estimates — meaning results may reflect first impressions of area rather than considered judgments. 
@@ -317,6 +316,14 @@ knitr::kable(pct_tbl,
              caption = "ANOVA Table - Signed Percent Error",
              na_string = "-")
 ```
+```{r echo=FALSE}
+lm_pct <- summary.lm(mod_pct)$coefficients
+lm_pct <- as.data.frame(lm_pct)
+lm_pct <- lm_pct[grep("Intercept|scales|polygon", rownames(lm_pct)), ]
+knitr::kable(round(lm_pct, 4),
+             col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
+             caption = "Treatment Parameter Estimates - Signed Percent Error")
+```
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(resid = residuals(mod_pct)), aes(sample = resid)) +
   stat_qq() +
@@ -370,6 +377,14 @@ knitr::kable(noP7_tbl,
              caption = "ANOVA Table - Signed Percent Error (Without Outlier)",
              na_string = "-")
 ```
+```{r echo=FALSE}
+lm_noP7 <- summary.lm(mod_noP7)$coefficients
+lm_noP7 <- as.data.frame(lm_noP7)
+lm_noP7 <- lm_noP7[grep("Intercept|scales|polygon", rownames(lm_noP7)), ]
+knitr::kable(round(lm_noP7, 4),
+             col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
+             caption = "Treatment Parameter Estimates - Signed Percent Error (Without Outlier)")
+```
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(resid = residuals(mod_noP7)), aes(sample = resid)) +
   stat_qq() +
@@ -411,7 +426,11 @@ Furthermore, from the branch of psychophysics, there is an enormous wealth of pe
 
 $$\psi = k \cdot \phi^n$$
 
-While testing area estimates of a projected square at varying magnitudes, his work yielded an $n$ of 0.7, which means that human perception of area is inherently non-linear (this has been supported by a number of preceding papers). By introducing the log ratio $\log(\hat{a}/a)$, we can derive a metric that has been empirically shown to best represent this phenomenon. We re-approached our analysis with this revised metric.
+While testing area estimates of a projected square at varying magnitudes, his work yielded an $n$ of 0.7, which means that human perception of area is inherently non-linear (this has been supported by a number of preceding papers). By introducing a log-ratio transformation, we can derive a metric that has been empirically shown to best represent this phenomenon. We re-approached our analysis by defining our new response variable as:
+
+$$\text{Log Ratio} = \log\left(\frac{\hat{a}}{a}\right)$$
+
+where $\hat{a}$ is the participant's area estimate and $a = 1.71$ square miles is the true polygon area.
 
 ### Log Ratio
 ```{r echo=FALSE}
@@ -428,6 +447,14 @@ knitr::kable(log_tbl,
              col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
              caption = "ANOVA Table - Log Ratio Model",
              na_string = "-")
+```
+```{r echo=FALSE}
+lm_log <- summary.lm(mod_log)$coefficients
+lm_log <- as.data.frame(lm_log)
+lm_log <- lm_log[grep("Intercept|scales|polygon", rownames(lm_log)), ]
+knitr::kable(round(lm_log, 4),
+             col.names = c("Estimate", "Std. Error", "t value", "Pr(>|t|)"),
+             caption = "Treatment Parameter Estimates - Log Ratio Model")
 ```
 ```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
 ggplot(data.frame(resid = residuals(mod_log)), aes(sample = resid)) +
@@ -495,16 +522,18 @@ The model fit showed that trial order did not have a statistically significant e
 
 # Conclusions
 
-This experiment investigated whether the scale at which a polygon is displayed on a map affects a participant's ability to accurately estimate its area. [ ]
+This experiment investigated whether the scale at which a polygon is displayed on a map affects a participant's ability to accurately estimate its area. We explored multiple transformations of the polygon area estimations and rigorously evaluated model assumptions and metrics to ensure statistically valid results. We found that the log ratio $\log(\hat{a}/a)$ transformation did the best job ensuring our data satisfied underlying assumptions and supporting scientific literature. In our 2-way ANOVA, we found that scale was non-significant (F = 1.089, p = 0.351) and polygon type was non-significant (F = 0.215, p = 0.808) at an alpha-level of 0.05. Variation in $\log(\hat{a}/a)$ was dominated by individual differences in spatial reasoning ability, and was very significant, with p-value less than 0.001. It was also evident in the ANOVA table, as the sum of squares from participant dwarfed our factors of interest. Consequently, we fail to reject both hypotheses. There is no sufficient evidence that large, medium, or small scale presentations nor polygon shape independently lead to statistically significant changes in area estimation accuracy. Parameter estimates further confirm this conclusion. Area estimates at medium scale were 0.134 log units higher than large scale (SE = 0.095, p = 0.170) and small scale estimates were 0.102 log units higher (SE = 0.095, p = 0.290), but neither were statistically significant. The intercept, of 0.811 (SE = 0.168, p < 0.001) was notably statistically significant. When converted back to signed estimation error, it indicates that the baseline participant estimated the polygon area to be approximately 2.25 larger than its true area. From this, we conclude that for our sampled population, participants consistently made egregious overestimates of polygon area, regardless of shape or scale.
 
 ## Limitations and Improvements
-There were several limitations that should be taken into account. First, many participants were unfamiliar with square miles as a unit, likely introducing systematic overestimation bias unrelated to scale. Future studies could provide unit conversion references or use more intuitive units. Second, the 30-second time limit may have prevented deliberate estimation, capturing first impressions rather than considered judgments. Third, the shared library setting created potential for participants to overhear each other's guesses, which may have anchored some responses. Finally, with only 15 participants, the study was underpowered to detect small effects of scale. A larger sample with greater replication would improve statistical power considerably.
+There were several limitations that should be taken into account. First, many participants were unfamiliar with square miles as a unit, likely introducing systematic overestimation bias unrelated to scale. Future studies could provide unit conversion references or use more intuitive units. Second, the 30-second time limit may have prevented deliberate estimation, capturing first impressions rather than considered judgments. Third, the shared library setting created potential for participants to overhear each other's guesses, which may have anchored some responses. Finally, with only 15 participants, the study was incredibly underpowered to detect small effects of scale. While we collected 3 responses per participant to augment the size of data for analysis, it introduced a number of obstacles that made it difficult to properly control for variance across individuals. In this case, it cost us a whopping 14 degrees of freedom. Further work should record only one data point per participant, and should extend participants to be random effects rather than fixed effects to improve analysis and make results more generalizable. 
 
 # References
 
 Instituto Geográfico Militar de la República Argentina. (2009). 
 POSGAR 2007 / Argentina 1 (EPSG:5343). EPSG Geodetic Parameter Registry. 
 Retrieved from https://epsg.io/5343
+
+Stevens, S. S. (1957). On the psychophysical law. Psychological Review, 64(3), 153–181. https://doi.org/10.1037/h0046162. 
 
 # Appendices
 
