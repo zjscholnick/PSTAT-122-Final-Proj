@@ -29,13 +29,12 @@ knitr::opts_chunk$set(error =  FALSE)
 
 :::: callout
 ::: {style="text-align: center"}
-[ **STUDENT NAME** ]{style="color: blue;"}
+[**STUDENT NAME**]{style="color: blue;"}
 :::
 
 -   Zachary Scholnick (3374824)
 -   Anjali Dev (A167A78)
 -   Logan Marks (9536947)
-
 ::::
 
 ::: callout-caution
@@ -44,16 +43,23 @@ knitr::opts_chunk$set(error =  FALSE)
 **Due Date:** Monday, March 16, 2026, 11:59 PM
 :::
 
+```{r}
+library(agricolae) 
+library(car)         
+library(dplyr)  
+library(ggplot2)
+library(knitr)
+```
+
 # Introduction
 
 In the field of map-making and cartography, scale is one of the most critical and challenging decisions practitioners face. At too large of a scale (zoomed in), key features are easily visible, but lose out on important context. At the same time, a very low scale (zoomed out), means that the information is difficult to see and fine spatial details are lost. Getting the scale of your map right is critical in conveying key information - and for that reason it's a question asked every time a map is created. On top of the practical aspects of mapmaking, humans possess a number of cognitive biases that make interpretations of proportion and area very difficult. As such, this experiment was motivated by the desire to provide real insights into what scale of representation makes estimation of area most intuitive.
 
 While tackling this in entirety is beyond the scope of this project, we chose to focus on testing a key component of this issue: How does the scale of a mapped polygon affect the accuracy in which users are able to estimate the area? Do people systematically overestimate or underestimate polygon area at different scales?
 
+# Experimental Design
 
-## Experimental Design
-
-To assess this, we created 3 polygons of equal area, 1.71 square miles, selected because mapped parcels, agricultural units, and other targets of interest are commonly in the 1-3 square mile range. These 3 polygons represented common archetypes in geometric representation: the simple polygon, rounded polygons, and the more complex, concave polygon. We selected 3 random regions in the Patagonian Steppe in Argentina, as this region lacked easily recognizable reference points of scale, like trees or streams, and consisted mainly of rock formations of unidentifiable size. To ensure consistent areal calculation of mapped region and polygon, we opted for the POSGAR 2007/EPSG:5343 projection, which is the official geodetic reference system of Argentina.
+To assess this, we created 3 polygons of equal area, 1.71 square miles, selected because mapped parcels, agricultural units, and other targets of interest are commonly in the 1-3 square mile range. We also opted to map polygons of equal area to avoid introducing an additional confounding variable. These 3 polygons represented common archetypes in geometric representation: the simple polygon, the rounded polygon, and the more complex, concave polygon. We selected 3 random regions in the Patagonian Steppe in Argentina, as this region lacked easily recognizable reference points of scale, like trees or streams, and consisted mainly of rock formations of unidentifiable size. To ensure consistent areal calculation of mapped region and polygon, we opted for the POSGAR 2007/EPSG:5343 projection, which is the official geodetic reference system of Argentina.
 
 Each polygon was then plotted at the scale ratios of 1:13,390, 1:26,780, and 1:59,852 to provide a large-scale, medium-scale, and small-scale plot. In a more generalizable interpretation, this means that we plotted polygons such that they covered 40%, 10%, and 2% of the entire mapped region. The scale bar itself was dynamically recalculated using QGIS based on the current map extent with a fixed display size for a constant visual across maps.
 
@@ -65,39 +71,56 @@ Each polygon was then plotted at the scale ratios of 1:13,390, 1:26,780, and 1:5
 
 : Scale treatments and polygon coverage of map frame {#tbl-scales}
 
-To isolate the desired effect of the impact of scale on area estimates, we employed the latin squares experimental design to account for variations within user interpretation and type of polygon. We expected some participants to systematically perform at higher or lower levels of success across every presented task dependent on a number of external factors, including eyesight and familiarity with related tasks. By controlling for participants, we seek to isolate common patterns across the studied population. We also hypothesized that the different shapes of polygons would modify the difficulty of area estimates at varying scales. By introducing 3 archetypal polygons, and recording results per polygon, we can also account for the variation in performance induced by polygon type. This brings us to the following standard latin square setup:
+Since our project was trying to capture natural, intuitive estimates of area, participants were each shown a unique combination of scale and polygon type to prevent prior exposure from influencing estimates. Each participant receieved 3 treatment assignments, randomized using a Latin square structure to ensure that each participant only saw each scale level and polygon type exactly once in varying orders.
 
-|                   | Curved Polygon | Simple Polygon | Concave Polygon |
-|-------------------|----------------|----------------|-----------------|
-| **Participant 1** | S              | M              | L               |
-| **Participant 2** | M              | L              | S               |
-| **Participant 3** | L              | S              | M               |
+We expected that significant variation in spatial cognitive ability across tested individuals would be a major driver in estimation accuracy. By modeling participant as a random effect, we capture the inter-participant variability and generalizes our insights to a wider population. We also hypothesized that polygon shape would alter estimation difficulty regardless of scale. By introducing 3 archetypal polygons as a fixed effect, we can control for this variability to better isolate the effect of scale.
 
-: Latin square treatment assignment for one replicate block {#tbl-latin}
+::: {style="display: flex; justify-content: center"}
+|                    | Curved Polygon | Simple Polygon | Concave Polygon |
+|--------------------|----------------|----------------|-----------------|
+| **Participant 7**  | S              | M              | L               |
+| **Participant 12** | M              | L              | S               |
+| **Participant 2**  | L              | S              | M               |
 
-Scale treatments were randomly assigned to rows and columns within each Latin square replicate using R's agricolae package with a fixed seed for reproducibility. In this experiment, each participant was given 30 seconds to write down an area estimate in square miles of a curved, simple and concave polygon, each shown at a unique scale. This response was then transformed into a signed percent error:
+: Example Latin square treatment assignment for one replicate block {#tbl-latin}
+:::
+
+In this experiment, each participant was given 30 seconds per map to write down an area estimate in square miles of a curved, simple and concave polygon, each shown at a unique scale. This response was then transformed into a signed percent error:
 
 $$\text{Percent Error} = \frac{\hat{a} - a}{a} \times 100$$
 
-where $\hat{a}$ is the participant's estimate and $a = 1.71$ square miles is the true polygon area. While each polygon has equal size, the participants were not informed during the experiment. 5 replications were performed, and with 3 participants per block, the total experiment had 15 participants. With 5 replicates of 3 participants each, this yields 5 observations per scale treatment, falling within the recommended guideline of 5–10 per treatment. All factors: Scale, polygon type, and participant block were all treated as fixed effects, as each level was deliberately selected rather than sampled from a larger population.
+where $\hat{a}$ is the participant's estimate and $a = 1.71$ square miles is the true polygon area.
 
+To formalize our experiment into a statistical model for analysis, we implemented a two-way ANOVA with blocking on participant. The response variable $Y_{ijk}$ denotes the signed percent error for participant $k$ receiving scale treatment $i$ and polygon type $j$. The model is:
 
-```{r}
+$$Y_{ijk} = \mu + \tau_i + \beta_j + \rho_k + \epsilon_{ijk}$$
+
+-   $i = 1, 2, 3$ indexes scale treatment (Large, Medium, Small)
+-   $j = 1, 2, 3$ indexes polygon type (simple, curved, concave)
+-   $k = 1, \cdots, 15$ indexes participant block
+-   $\mu$ is the overall mean percent error
+-   $\tau_i$ is the fixed effect of scale treatment $i$, with $\sum \tau_i = 0$
+-   $\beta_j$ is the fixed effect of polygon type $j$, with $\sum \beta_j = 0$
+-   $\rho_k$ is the fixed effect of participant block $k$, with $\sum \rho_k = 0$
+-   $\epsilon_{ijk} \sim \mathcal{N}(0, \sigma^2)$ is the residual error
+
+```{r echo=FALSE}
+#### Assigning Randomized + Balanced Treatments for Participants ####
 library(agricolae)
 
 scales <- c("L", "M", "S")
 polygon_types <- c("curved", "simple", "concave")
 
-# 1. Map each participant to a specific replicate AND a specific row
+# randomly assigning each participant to a specific replicate + row
 set.seed(42)
 participant_assignment <- data.frame(
   replicate = rep(1:5, each = 3),
   row = rep(1:3, times = 5),
-  # Randomly shuffle participants P1 through P15 into these slots
+  # Randomly assigning participants through these slots
   participant = paste0("P", sample(1:15)) 
 )
 
-# 2. Generate the 5 Latin Squares
+# Generating the 5 Latin Squares
 design_df <- do.call(rbind, lapply(1:5, function(i) {
   book <- design.lsd(scales, seed = i * 10)$book
   book$replicate <- i
@@ -110,15 +133,14 @@ design_df <- do.call(rbind, lapply(1:5, function(i) {
   return(book)
 }))
 
-# 3. THE FIX: Merge on BOTH replicate and row 
+# Merge on BOTH replicate and row to build final design dataframe
 design_df <- merge(design_df, participant_assignment, by = c("replicate", "row"))
 
-# 4. Sort neatly by participant (P1 to P15) and then by trial/column (1, 2, 3)
-# (using a custom sort so P10 doesn't jump in front of P2)
+# 4. Sort neatly by participant (P1 to P15) and then by trial/column (1, 2, 3) to make implementing easy
 design_df <- design_df[order(as.numeric(gsub("P", "", design_df$participant)), design_df$col), 
                        c("participant", "replicate", "row", "col", "scales", "polygon")]
 
-# Add empty response column
+# Creating an empty response column
 design_df$percent_error <- NA
 
 cat("\nFull Design\n")
@@ -127,25 +149,20 @@ print(design_df)
 
 # Data Collection
 
-**Procedure**: Each participant was given 30 seconds to estimate the area in square miles of each polygon shown. Trials were conducted using a slide presentation displayed on a laptop screen, with each slide showing one polygon at its assigned scale alongside a scale bar. Participants recorded their estimates on paper. All 5 replicates were conducted in the UCSB library on March 14, 2026. Participants were seated individually and shown the slides in sequence, with no prior knowledge of the true polygon area or that all three polygons were equal in size.
+**Procedure** Each participant was given 30 seconds to estimate the area in square miles of each polygon shown. Trials were conducted using a slide presentation displayed on a laptop screen, with each slide showing one polygon at its assigned scale alongside a scale bar. Maps were shown on the same monitor at the same display size to keep stimuli constant. Participants recorded their estimates on paper. All 5 replicates were conducted in the UCSB library on March 14, 2026. Participants were seated individually and shown the slides in sequence according to the generated Latin Squares, with no prior knowledge of the true polygon area or that all three polygons were equal in size.
 
-Slides for running trials: https://docs.google.com/presentation/d/1cQkHKFSfIFLclCvy6DIQ8lRVRss23OmEZ6OrBmpAJ2I/edit?usp=sharing
+**Challenges/Adjustments** Several challenges arose during data collection. The most notable was that some participants were unfamiliar with square miles as a unit of measurement, which may have introduced systematic bias into estimates regardless of scale treatment. While participants were not coached on how to use the scale bar, some may have relied on intuition rather than calculation. Additionally, the 30-second time limit, while intentional in capturing instinctive responses, may have prevented participants from making more deliberate estimates — meaning results may reflect first impressions of area rather than considered judgments.
 
-**Challenges/Adjustments**: Several challenges arose during data collection. The most notable was that some participants were unfamiliar with square miles as a unit of measurement, which may have introduced systematic bias into estimates regardless of scale treatment. While participants were not coached on how to use the scale bar, some may have relied on intuition rather than calculation. Additionally, the 30-second time limit, while intentional in capturing instinctive responses, may have prevented participants from making more deliberate estimates — meaning results may reflect first impressions of area rather than considered judgments. Finally, as trials were conducted in a shared library space, there is a small possibility that some participants overheard the estimates of others, which could have anchored subsequent guesses. No adjustments were made to the protocol during data collection.
+Finally, as trials were conducted in a shared library space, there is a very small possibility that some participants overheard the estimates of others, which could have anchored subsequent guesses. Protocol was updated so that participants could not use outside props like a pencil, phone, or keys to match distances from the scale bar onto the map. This was to ensure constant conditions in estimating area across trials.
 
-**Data Presentation**: 
+**Data Presentation**
 
-```{r}
+```{r echo=FALSE}
 enter_data <- function(df, p_name, estimates) {
-  # Quick check to make sure you entered exactly 3 values
-  if(length(estimates) != 3) {
-    stop("Please provide exactly 3 estimates for the participant.")
-  }
-  
-  # Calculate the percent error based on the true area (1.71 sq miles)
+
+  # calculate the percent error based on the true area (1.71 sq miles)
   errors <- ((estimates - 1.71) / 1.71) * 100
   
-  # Assign the errors to col 1, 2, and 3 (Trial 1, 2, and 3) for that specific participant
   for(i in 1:3) {
     df$percent_error[df$participant == p_name & df$col == i] <- errors[i]
   }
@@ -175,28 +192,11 @@ knitr::kable(design_df,
              digits = 2)
 ```
 
-
-```{r}
-library(dplyr)
-
-summary_table <- design_df %>%
-  group_by(scales) %>%
-  summarise(
-    Mean_Error = round(mean(percent_error, na.rm = TRUE), 2),
-    SD_Error = round(sd(percent_error, na.rm = TRUE), 2),
-    N = n()
-  )
-
-knitr::kable(summary_table,
-             
-             col.names = c("Scale", "Mean % Error", "SD % Error", "N"))
-```
-
-
 # Analysis
 
 **Exploratory Data**:
-```{r}
+
+```{r echo=FALSE}
 library(dplyr)
 library(ggplot2)
 
@@ -212,81 +212,642 @@ summary_stats <- design_df %>%
   )
 
 knitr::kable(summary_stats, caption = "Summary statistics of percent error by scale treatment")
+```
 
-# Boxplot by scale
+```{r echo=FALSE}
+# Boxplot by Scale Treatment
 ggplot(design_df, aes(x = scales, y = percent_error, fill = scales)) +
   geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  coord_cartesian(ylim = c(-100, 300)) +
   labs(title = "Percent Error by Scale Treatment",
        x = "Scale", y = "Percent Error (%)") +
   theme_minimal()
+```
 
+Note: 1 observation of 601% error on the medium scale was omitted for visual clarity
+
+```{r echo=FALSE}
 # Boxplot by polygon type
 ggplot(design_df, aes(x = polygon, y = percent_error, fill = polygon)) +
   geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  coord_cartesian(ylim = c(-100, 300)) +
   labs(title = "Percent Error by Polygon Type",
        x = "Polygon Type", y = "Percent Error (%)") +
   theme_minimal()
 ```
 
-The boxplots show that percent error is fairly similar across all three scale treatments (Large, Medium, Small), with most participants overestimating the polygon area by around 60–100%. There is one clear outlier with a percent error near 600%, which heavily influences the spread. Across polygon types, concave polygons had the most consistent estimates while curved polygons showed the most variation. Overall, the differences between groups appear modest, which we will test formally using ANOVA.
+Note: 1 observation of 601% error on the curved polygon was omitted for visual clarity
 
-
+The boxplots show that percent error is fairly similar across all three scale treatments (Large, Medium, Small), with most participants overestimating the polygon area by around 60–100%. There is one clear outlier with a percent error near 600%, which heavily influences the spread. Across polygon types, concave polygons had the most consistent estimates while curved polygons showed the most variation. Overall, the differences between groups appear modest, which we will be tested formally.
 
 **Hypothesis Testing**: Test your hypothesis with an appropriate statistical test (e.g., ANOVA).
-```{r}
-# Latin square ANOVA model
-model <- aov(percent_error ~ scales + polygon + participant, data = design_df)
-summary(model)
 
-TukeyHSD(model, "scales")
-```
+We test the following hypotheses for scale treatment: $$H_0: \tau_L = \tau_M = \tau_S = 0$$ $$H_a: \tau_i \neq 0 \text{ for at least one } i$$
 
-We test the following hypotheses:
-$$H_0: \mu_L = \mu_M = \mu_S$$
+and for polygon type: $$H_0: \beta_{\text{simple}} = \beta_{\text{curved}} = \beta_{\text{concave}} = 0$$ $$H_a: \beta_j \neq 0 \text{ for at least one } j$$
 
-$$ H_a: \text{At least one scale mean differs} $$
-where $$\mu_L$$, $$\mu_M$$, and $$\mu_S$$ represent the mean percent error under large, medium, and small scale treatments respectively. A Latin square ANOVA was fitted with scale as the primary treatment factor and polygon type and participant as blocking factors.
-
-The ANOVA results show that scale treatment was not statistically significant (F = 0.144, p = 0.867), meaning we fail to reject the null hypothesis. There is no evidence that map scale affects the accuracy of area estimation. Similarly, polygon type was not significant (F = 0.258, p = 0.774), suggesting that polygon shape did not meaningfully influence estimation accuracy.
-
-However, the participant blocking factor was highly significant (F = 4.303, p < 0.001), confirming that individual participants varied substantially in their estimation ability. This validates our decision to use a Latin square design to control for participant-level variation — without blocking, this variability would have inflated our residual error and made it even harder to detect a scale effect.
-
-The Tukey HSD post-hoc test confirmed no significant pairwise differences between any scale pairs (M-L: p = 0.862, S-L: p = 0.927, S-M: p = 0.988), with all confidence intervals comfortably overlapping zero.
+where $\tau_i$ and $\beta_j$ are the fixed effects of scale and polygon type as defined in the model above, and $Y_{ijk}$ is the signed percent error response. In context, $H_0$ for scale proposes that the geographic scale at which a polygon is displayed has no effect on the accuracy of area estimation. Equivalently, it proposes that participants estimate equally well regardless of whether the polygon occupies 40%, 10%, or 2% of the map frame. $H_0$ for polygon type asserts that polygon shape has no independent effect on estimation accuracy after controlling for scale and participant. While the participant blocking factor $\rho_k$ is included to contain the individual variations in spatial reasoning ability, it's not the primary interest.
 
 **Tables, Figures, & Code**:
 
-```{r}
-# ANOVA Table
-model <- aov(percent_error ~ scales + polygon + participant, data = design_df)
-knitr::kable(summary(model)[[1]], 
-             caption = "Latin Square ANOVA Results",
-             digits = 3)
+```{r echo=FALSE}
+# fit models and run diagnostics
 
-# Tukey Post-hoc Table
-tukey_results <- TukeyHSD(model, "scales")
-tukey_df <- as.data.frame(tukey_results$scales)
-knitr::kable(tukey_df,
-             caption = "Tukey HSD Post-hoc Test for Scale Treatment",
-             digits = 3,
-             col.names = c("Difference", "Lower 95% CI", "Upper 95% CI", "Adjusted p-value"))
+# percent error — full data
+mod_pct <- aov(percent_error ~ scales + polygon + participant, data = design_df)
+
+sw_pct       <- shapiro.test(residuals(mod_pct))
+design_df$resid_pct <- residuals(mod_pct)
+lev_scale_pct   <- leveneTest(resid_pct ~ scales, data = design_df)
+lev_poly_pct    <- leveneTest(resid_pct ~ polygon, data = design_df)
+design_df$std_resid <- residuals(mod_pct) / sigma(mod_pct)
+outliers <- design_df %>%
+  filter(abs(std_resid) > 2.5) %>%
+  select(participant, scales, polygon, percent_error, std_resid)
+
+# percent error — P7 removed
+df_noP7 <- design_df %>% filter(participant != "P7")
+mod_noP7 <- aov(percent_error ~ scales + polygon + participant, data = df_noP7)
+
+sw_noP7      <- shapiro.test(residuals(mod_noP7))
+df_noP7$resid_noP7 <- residuals(mod_noP7)
+lev_scale_noP7  <- leveneTest(resid_noP7 ~ scales, data = df_noP7)
+lev_poly_noP7   <- leveneTest(resid_noP7 ~ polygon, data = df_noP7)
+
+# log ratio — full data
+design_df$log_ratio <- log(design_df$percent_error / 100 + 1)
+mod_log <- aov(log_ratio ~ scales + polygon + participant, data = design_df)
+
+sw_log       <- shapiro.test(residuals(mod_log))
+design_df$resid_log <- residuals(mod_log)
+lev_scale_log   <- leveneTest(resid_log ~ scales, data = design_df)
+lev_poly_log    <- leveneTest(resid_log ~ polygon, data = design_df)
+design_df$std_resid_log <- residuals(mod_log) / sigma(mod_log)
+outliers_log <- design_df %>%
+  filter(abs(std_resid_log) > 2.5) %>%
+  select(participant, scales, polygon, log_ratio, std_resid_log)
 ```
 
+### Signed Percent Error
+
+```{r echo=FALSE}
+pct_raw <- summary(mod_pct)[[1]]
+pct_tbl <- data.frame(
+  Df     = pct_raw$Df,
+  SumSq  = round(pct_raw$`Sum Sq`, 3),
+  MeanSq = round(pct_raw$`Mean Sq`, 3),
+  Fvalue = round(pct_raw$`F value`, 3),
+  Pvalue = round(pct_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(pct_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Signed Percent Error",
+             na_string = "-")
+```
+
+```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_pct)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Signed Percent Error",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_pct),
+                  resid  = residuals(mod_pct)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Signed Percent Error",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=FALSE}
+assump_pct <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_pct$statistic, 4),
+                round(lev_scale_pct[1,2], 4),
+                round(lev_poly_pct[1,2], 4)),
+  P.value   = c(round(sw_pct$p.value, 4),
+                round(lev_scale_pct[1,3], 4),
+                round(lev_poly_pct[1,3], 4)),
+  Result    = c("Fail", "Pass", "Pass")
+)
+knitr::kable(assump_pct, caption = "Assumption Tests - Signed Percent Error")
+```
+
+```{r echo=FALSE}
+knitr::kable(outliers, caption = "Detected Outliers (|Standardized Residual| > 2.5)")
+```
+
+Through our exploratory data analysis, and now formally, by examining standardized residual values, we identified a major outlier in the data. Participant 7 grossly overestimated the area of the concave polygon when shown at a medium scale, with an estimate over 600% larger than the true value. With a standardized residual over 3, we decided to repeat analysis by omitting estimates from this participant. This decision was further supported by the mismatch we observed between the Q-Q plot and Shapiro-Wilk test of normality. The Q-Q plot indicated a pretty strong fit to a normal distribution, with the exclusion of one true point, and the Shapiro-Wilk test strongly indicated non-normality, invalidating our ANOVA results. If this outlying point had enough power to skew the Shapiro-Wilk test, its exclusion may reveal important insights in a revised ANOVA.
+
+### Signed Percent Error (Without Outlier)
+
+```{r echo=FALSE}
+noP7_raw <- summary(mod_noP7)[[1]]
+noP7_tbl <- data.frame(
+  Df     = noP7_raw$Df,
+  SumSq  = round(noP7_raw$`Sum Sq`, 3),
+  MeanSq = round(noP7_raw$`Mean Sq`, 3),
+  Fvalue = round(noP7_raw$`F value`, 3),
+  Pvalue = round(noP7_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(noP7_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Signed Percent Error (Without Outlier)",
+             na_string = "-")
+```
+
+```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_noP7)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Signed Percent Error (Without Outlier)",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_noP7),
+                  resid  = residuals(mod_noP7)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Signed Percent Error (Without Outlier)",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=FALSE}
+assump_noP7 <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_noP7$statistic, 4),
+                round(lev_scale_noP7[1,2], 4),
+                round(lev_poly_noP7[1,2], 4)),
+  P.value   = c(round(sw_noP7$p.value, 4),
+                round(lev_scale_noP7[1,3], 4),
+                round(lev_poly_noP7[1,3], 4)),
+  Result    = c("Pass", "Pass", "Pass")
+)
+knitr::kable(assump_noP7,
+             caption = "Assumption Tests - Signed Percent Error (Without Outlier)")
+```
+
+The adjusted Shapiro-Wilk test confirms that with the exception of one outlying observation, the signed percentage error estimates were normally distributed and all model assumptions were satisfied. Shapiro-Wilk showed normality of residuals (W = 0.962, p = 0.168), and Levene's test showed constant variance across both scale (F = 0.516, p = 0.601) and polygon groups (F = 0.040, p = 0.961). However, the interpretation of the final ANOVA results did not change. Scale was still non-significant and polygon type was non-significant. The participant blocking factor remained highly significant (F = 5.979, p \< 0.001), again confirming that individual differences in spatial reasoning ability dominate variation in estimation accuracy.
+
+However, the need to omit valid observational data to perform a statistically valid analysis indicated that perhaps the signed percentage error was not the best metric for interpretation. Upon re-evaluation and research into literature, the use of a signed percentage error was revealed to be problematic. The most critical issue is the way the metric is bounded. Since the theoretical lowest value for a signed percentage error is -100%, where the participant makes an estimate of 0 square miles, the theoretical highest value was infinite. In practice, this meant our data was incredibly asymmetrical.
+
+Furthermore, from the branch of psychophysics, there is an enormous wealth of peer-reviewed science that states that humans do not interpret area linearly, and as such, it would be erroneous to analyze area estimations with just a signed percentage error. Stevens's Power Law, first proposed back in 1957, states that the perceived magnitude of a stimulus is proportional to the magnitude of the stimuli raised to some experiment-derived constant $n$:
+
+$$\psi = k \cdot \phi^n$$
+
+While testing area estimates of a projected square at varying magnitudes, his work yielded an $n$ of 0.7, which means that human perception of area is inherently non-linear (this has been supported by a number of preceding papers). By introducing the log ratio $\log(\hat{a}/a)$, we can derive a metric that has been empirically shown to best represent this phenomenon. We re-approached our analysis with this revised metric.
+
+### Log Ratio
+
+```{r echo=FALSE}
+log_raw <- summary(mod_log)[[1]]
+log_tbl <- data.frame(
+  Df     = log_raw$Df,
+  SumSq  = round(log_raw$`Sum Sq`, 3),
+  MeanSq = round(log_raw$`Mean Sq`, 3),
+  Fvalue = round(log_raw$`F value`, 3),
+  Pvalue = round(log_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(log_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Log Ratio Model",
+             na_string = "-")
+```
+
+```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_log)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Log Ratio Model",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=FALSE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_log),
+                  resid  = residuals(mod_log)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Log Ratio Model",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=FALSE}
+assump_log <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_log$statistic, 4),
+                round(lev_scale_log[1,2], 4),
+                round(lev_poly_log[1,2], 4)),
+  P.value   = c(round(sw_log$p.value, 4),
+                round(lev_scale_log[1,3], 4),
+                round(lev_poly_log[1,3], 4)),
+  Result    = c("Pass", "Pass", "Pass")
+)
+knitr::kable(assump_log, caption = "Assumption Tests - Log Ratio Model")
+```
+
+```{r echo=FALSE}
+if(nrow(outliers_log) == 0){
+  cat("No outliers detected under log ratio transformation.")
+} else {
+  knitr::kable(outliers_log, caption = "Outliers - Log Ratio Model")
+}
+```
+
+Under the log ratio transformation of estimated areas, all model assumptions were satisfied without excluding data. Shapiro-Wilk showed normality of residuals (W = 0.975, p = 0.422), Levene's test indicated constant variance across scale (F = 0.182, p = 0.835) and polygon groups (F = 0.816, p = 0.449), and no observations passed the 2.5 standardized residual threshold for outlier detection. Scale was non-significant (F = 1.089, p = 0.351) and polygon type was non-significant (F = 0.215, p = 0.808). The participant blocking factor was highly significant (F = 5.518, p \< 0.001), confirming that individual differences in spatial reasoning ability account for the dominant share of variation in estimation accuracy.
+
+As a final check of data quality, we wanted to verify that the order in which participants viewed the maps did not affect their estimates. We had controlled for this in our aforementioned method for assigning treatments, but wanted additional validation. If our assumption of no learning effect was invalidated, we wanted to investigate what have occurred. This was performed by adding in the trial order as a covariate in the model, and then examining if the fitted coefficient was statistically significant.
+
+```{r echo=FALSE}
+mod_order <- aov(log_ratio ~ scales + polygon + participant + as.numeric(col),
+                 data = design_df)
+
+order_raw <- summary(mod_order)[[1]]
+order_tbl <- data.frame(
+  Df     = order_raw$Df,
+  SumSq  = round(order_raw$`Sum Sq`, 3),
+  MeanSq = round(order_raw$`Mean Sq`, 3),
+  Fvalue = round(order_raw$`F value`, 3),
+  Pvalue = round(order_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Trial Order", "Residuals")
+)
+knitr::kable(order_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "Model with Trial Order Covariate - Log Ratio",
+             na_string = "-")
+```
+
+The model fit showed that trial order did not have a statistically significant effect on estimation accuracy, providing no evidence of systematic learning or fatigue across trials.
 
 # Conclusions
 
-This experiment investigated whether the scale at which a polygon is displayed on a map affects a participant's ability to accurately estimate its area. Based on our Latin square ANOVA, we found no statistically significant effect of map scale on percent error (F = 0.144, p = 0.867), nor of polygon type (F = 0.258, p = 0.774). As such, we fail to reject the null hypothesis — there is no evidence that large, medium, or small scale presentations lead to meaningfully different estimation accuracy. Notably, all participants systematically overestimated polygon area regardless of scale or shape, suggesting a general human tendency to overestimate mapped area.
-
-The most significant finding was the strong participant effect (F = 4.303, p < 0.001), confirming that individual differences in spatial reasoning ability account for far more variation in estimation accuracy than the experimental treatments themselves. This validates the Latin square blocking structure used in the design.
+This experiment investigated whether the scale at which a polygon is displayed on a map affects a participant's ability to accurately estimate its area. \[ \]
 
 ## Limitations and Improvements
-Several limitations should be noted. First, many participants were unfamiliar with square miles as a unit, likely introducing systematic overestimation bias unrelated to scale. Future studies could provide unit conversion references or use more intuitive units. Second, the 30-second time limit may have prevented deliberate estimation, capturing first impressions rather than considered judgments. Third, the shared library setting created potential for participants to overhear each other's guesses, which may have anchored some responses. Finally, with only 15 participants, the study was underpowered to detect small effects of scale. A larger sample with greater replication would improve statistical power considerably.
+
+There were several limitations that should be taken into account. First, many participants were unfamiliar with square miles as a unit, likely introducing systematic overestimation bias unrelated to scale. Future studies could provide unit conversion references or use more intuitive units. Second, the 30-second time limit may have prevented deliberate estimation, capturing first impressions rather than considered judgments. Third, the shared library setting created potential for participants to overhear each other's guesses, which may have anchored some responses. Finally, with only 15 participants, the study was underpowered to detect small effects of scale. A larger sample with greater replication would improve statistical power considerably.
 
 # References
 
-Instituto Geográfico Militar de la República Argentina. (2009). 
-POSGAR 2007 / Argentina 1 (EPSG:5343). EPSG Geodetic Parameter Registry. 
-Retrieved from https://epsg.io/5343
+Instituto Geográfico Militar de la República Argentina. (2009). POSGAR 2007 / Argentina 1 (EPSG:5343). EPSG Geodetic Parameter Registry. Retrieved from https://epsg.io/5343
 
 # Appendices
 
--   `R` code.
+-   Slides for running trials: https://docs.google.com/presentation/d/1cQkHKFSfIFLclCvy6DIQ8lRVRss23OmEZ6OrBmpAJ2I/edit?usp=sharing
+
+-   `R` code:
+
+```{r echo=TRUE}
+#### Assigning Randomized + Balanced Treatments for Participants ####
+library(agricolae)
+
+scales <- c("L", "M", "S")
+polygon_types <- c("curved", "simple", "concave")
+
+# randomly assigning each participant to a specific replicate + row
+set.seed(42)
+participant_assignment <- data.frame(
+  replicate = rep(1:5, each = 3),
+  row = rep(1:3, times = 5),
+  # Randomly assigning participants through these slots
+  participant = paste0("P", sample(1:15)) 
+)
+
+# Generating the 5 Latin Squares
+design_df <- do.call(rbind, lapply(1:5, function(i) {
+  book <- design.lsd(scales, seed = i * 10)$book
+  book$replicate <- i
+  
+  # Assign polygon types to columns (1, 2, 3)
+  set.seed(i)
+  col_map <- setNames(sample(polygon_types), 1:3)
+  book$polygon <- col_map[as.character(book$col)]
+  
+  return(book)
+}))
+
+# Merge on BOTH replicate and row to build final design dataframe
+design_df <- merge(design_df, participant_assignment, by = c("replicate", "row"))
+
+# 4. Sort neatly by participant (P1 to P15) and then by trial/column (1, 2, 3) to make implementing easy
+design_df <- design_df[order(as.numeric(gsub("P", "", design_df$participant)), design_df$col), 
+                       c("participant", "replicate", "row", "col", "scales", "polygon")]
+
+# Creating an empty response column
+design_df$percent_error <- NA
+
+cat("\nFull Design\n")
+print(design_df)
+```
+
+```{r echo=TRUE}
+enter_data <- function(df, p_name, estimates) {
+
+  # calculate the percent error based on the true area (1.71 sq miles)
+  errors <- ((estimates - 1.71) / 1.71) * 100
+  
+  for(i in 1:3) {
+    df$percent_error[df$participant == p_name & df$col == i] <- errors[i]
+  }
+  
+  return(df)
+}
+
+#data collection 
+design_df <- enter_data(design_df, "P1", c(4.8, 4.5, 3.0))
+design_df <- enter_data(design_df, "P2", c(3, 3, 3))
+design_df <- enter_data(design_df, "P3", c(2, 1, 3.2))
+design_df <- enter_data(design_df, "P4", c(3, 4, 4.5))
+design_df <- enter_data(design_df, "P5", c(3.1, 2.8, 2.6))
+design_df <- enter_data(design_df, "P6", c(2.4, 2.2, 1.6))
+design_df <- enter_data(design_df, "P7", c(5, 12, 6))
+design_df <- enter_data(design_df, "P8", c(2.4, 2.5, 2))
+design_df <- enter_data(design_df, "P9", c(1.43, 2.8, 3.2))
+design_df <- enter_data(design_df, "P10", c(3.2, 3.5, 4.1))
+design_df <- enter_data(design_df, "P11", c(2.7, 2.9, 3.1))
+design_df <- enter_data(design_df, "P12", c(4.3, 4.1, 3.9))
+design_df <- enter_data(design_df, "P13", c(3.6, 3.2, 3.8))
+design_df <- enter_data(design_df, "P14", c(2.9, 2.4, 2.7))
+design_df <- enter_data(design_df, "P15", c(4.8, 4.5, 4.9))
+
+knitr::kable(design_df, 
+             caption = "Full experimental data with percent error by participant, polygon type, and scale",
+             digits = 2)
+```
+
+```{r echo=TRUE}
+library(dplyr)
+library(ggplot2)
+
+# Basic summary statistics by scale
+summary_stats <- design_df %>%
+  group_by(scales) %>%
+  summarise(
+    Mean = round(mean(percent_error, na.rm = TRUE), 2),
+    SD = round(sd(percent_error, na.rm = TRUE), 2),
+    Min = round(min(percent_error, na.rm = TRUE), 2),
+    Max = round(max(percent_error, na.rm = TRUE), 2),
+    N = n()
+  )
+
+knitr::kable(summary_stats, caption = "Summary statistics of percent error by scale treatment")
+```
+
+```{r echo=TRUE}
+# Boxplot by Scale Treatment
+ggplot(design_df, aes(x = scales, y = percent_error, fill = scales)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  coord_cartesian(ylim = c(-100, 300)) +
+  labs(title = "Percent Error by Scale Treatment",
+       x = "Scale", y = "Percent Error (%)") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+# Boxplot by polygon type
+ggplot(design_df, aes(x = polygon, y = percent_error, fill = polygon)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  coord_cartesian(ylim = c(-100, 300)) +
+  labs(title = "Percent Error by Polygon Type",
+       x = "Polygon Type", y = "Percent Error (%)") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+# fit models and run diagnostics
+
+# percent error — full data
+mod_pct <- aov(percent_error ~ scales + polygon + participant, data = design_df)
+
+sw_pct       <- shapiro.test(residuals(mod_pct))
+design_df$resid_pct <- residuals(mod_pct)
+lev_scale_pct   <- leveneTest(resid_pct ~ scales, data = design_df)
+lev_poly_pct    <- leveneTest(resid_pct ~ polygon, data = design_df)
+design_df$std_resid <- residuals(mod_pct) / sigma(mod_pct)
+outliers <- design_df %>%
+  filter(abs(std_resid) > 2.5) %>%
+  select(participant, scales, polygon, percent_error, std_resid)
+
+# percent error — P7 removed
+df_noP7 <- design_df %>% filter(participant != "P7")
+mod_noP7 <- aov(percent_error ~ scales + polygon + participant, data = df_noP7)
+
+sw_noP7      <- shapiro.test(residuals(mod_noP7))
+df_noP7$resid_noP7 <- residuals(mod_noP7)
+lev_scale_noP7  <- leveneTest(resid_noP7 ~ scales, data = df_noP7)
+lev_poly_noP7   <- leveneTest(resid_noP7 ~ polygon, data = df_noP7)
+
+# log ratio — full data
+design_df$log_ratio <- log(design_df$percent_error / 100 + 1)
+mod_log <- aov(log_ratio ~ scales + polygon + participant, data = design_df)
+
+sw_log       <- shapiro.test(residuals(mod_log))
+design_df$resid_log <- residuals(mod_log)
+lev_scale_log   <- leveneTest(resid_log ~ scales, data = design_df)
+lev_poly_log    <- leveneTest(resid_log ~ polygon, data = design_df)
+design_df$std_resid_log <- residuals(mod_log) / sigma(mod_log)
+outliers_log <- design_df %>%
+  filter(abs(std_resid_log) > 2.5) %>%
+  select(participant, scales, polygon, log_ratio, std_resid_log)
+```
+
+```{r echo=TRUE}
+pct_raw <- summary(mod_pct)[[1]]
+pct_tbl <- data.frame(
+  Df     = pct_raw$Df,
+  SumSq  = round(pct_raw$`Sum Sq`, 3),
+  MeanSq = round(pct_raw$`Mean Sq`, 3),
+  Fvalue = round(pct_raw$`F value`, 3),
+  Pvalue = round(pct_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(pct_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Signed Percent Error",
+             na_string = "-")
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_pct)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Signed Percent Error",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_pct),
+                  resid  = residuals(mod_pct)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Signed Percent Error",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+assump_pct <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_pct$statistic, 4),
+                round(lev_scale_pct[1,2], 4),
+                round(lev_poly_pct[1,2], 4)),
+  P.value   = c(round(sw_pct$p.value, 4),
+                round(lev_scale_pct[1,3], 4),
+                round(lev_poly_pct[1,3], 4)),
+  Result    = c("Fail", "Pass", "Pass")
+)
+knitr::kable(assump_pct, caption = "Assumption Tests - Signed Percent Error")
+```
+
+```{r echo=TRUE}
+knitr::kable(outliers, caption = "Detected Outliers (|Standardized Residual| > 2.5)")
+```
+
+```{r echo=TRUE}
+noP7_raw <- summary(mod_noP7)[[1]]
+noP7_tbl <- data.frame(
+  Df     = noP7_raw$Df,
+  SumSq  = round(noP7_raw$`Sum Sq`, 3),
+  MeanSq = round(noP7_raw$`Mean Sq`, 3),
+  Fvalue = round(noP7_raw$`F value`, 3),
+  Pvalue = round(noP7_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(noP7_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Signed Percent Error (Without Outlier)",
+             na_string = "-")
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_noP7)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Signed Percent Error (Without Outlier)",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_noP7),
+                  resid  = residuals(mod_noP7)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Signed Percent Error (Without Outlier)",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+assump_noP7 <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_noP7$statistic, 4),
+                round(lev_scale_noP7[1,2], 4),
+                round(lev_poly_noP7[1,2], 4)),
+  P.value   = c(round(sw_noP7$p.value, 4),
+                round(lev_scale_noP7[1,3], 4),
+                round(lev_poly_noP7[1,3], 4)),
+  Result    = c("Pass", "Pass", "Pass")
+)
+knitr::kable(assump_noP7,
+             caption = "Assumption Tests - Signed Percent Error (Without Outlier)")
+```
+
+```{r echo=TRUE}
+log_raw <- summary(mod_log)[[1]]
+log_tbl <- data.frame(
+  Df     = log_raw$Df,
+  SumSq  = round(log_raw$`Sum Sq`, 3),
+  MeanSq = round(log_raw$`Mean Sq`, 3),
+  Fvalue = round(log_raw$`F value`, 3),
+  Pvalue = round(log_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Residuals")
+)
+knitr::kable(log_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "ANOVA Table - Log Ratio Model",
+             na_string = "-")
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(resid = residuals(mod_log)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(color = "red") +
+  labs(title = "QQ Plot - Log Ratio Model",
+       x = "Theoretical Quantiles", y = "Sample Quantiles") +
+  theme_minimal()
+```
+
+```{r echo=TRUE, fig.align='center', fig.width=5, fig.height=4}
+ggplot(data.frame(fitted = fitted(mod_log),
+                  resid  = residuals(mod_log)),
+       aes(x = fitted, y = resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted - Log Ratio Model",
+       x = "Fitted Values", y = "Residuals") +
+  theme_minimal()
+```
+
+```{r echo=TRUE}
+assump_log <- data.frame(
+  Test      = c("Shapiro-Wilk", "Levene (Scale)", "Levene (Polygon)"),
+  Statistic = c(round(sw_log$statistic, 4),
+                round(lev_scale_log[1,2], 4),
+                round(lev_poly_log[1,2], 4)),
+  P.value   = c(round(sw_log$p.value, 4),
+                round(lev_scale_log[1,3], 4),
+                round(lev_poly_log[1,3], 4)),
+  Result    = c("Pass", "Pass", "Pass")
+)
+knitr::kable(assump_log, caption = "Assumption Tests - Log Ratio Model")
+```
+
+```{r echo=TRUE}
+if(nrow(outliers_log) == 0){
+  cat("No outliers detected under log ratio transformation.")
+} else {
+  knitr::kable(outliers_log, caption = "Outliers - Log Ratio Model")
+}
+```
+
+```{r echo=TRUE}
+mod_order <- aov(log_ratio ~ scales + polygon + participant + as.numeric(col),
+                 data = design_df)
+
+order_raw <- summary(mod_order)[[1]]
+order_tbl <- data.frame(
+  Df     = order_raw$Df,
+  SumSq  = round(order_raw$`Sum Sq`, 3),
+  MeanSq = round(order_raw$`Mean Sq`, 3),
+  Fvalue = round(order_raw$`F value`, 3),
+  Pvalue = round(order_raw$`Pr(>F)`, 3),
+  row.names = c("Scale", "Polygon", "Participant", "Trial Order", "Residuals")
+)
+knitr::kable(order_tbl,
+             col.names = c("Df", "Sum Sq", "Mean Sq", "F value", "Pr(>F)"),
+             caption = "Model with Trial Order Covariate - Log Ratio",
+             na_string = "-")
+```
